@@ -10,9 +10,19 @@ CHAT_ID = os.environ["CHAT_ID"]
 def get_prices():
     prices_spot = elspot.Prices()
 
+    import pytz
+    from datetime import datetime
+
+    tz = pytz.timezone("Europe/Helsinki")
+    today = datetime.now(tz).date()
+
     data = prices_spot.hourly(
-        areas=["FI"]
+        areas=["FI"],
+        end_date=today
     )
+
+    if data is None:
+        raise Exception("No price data returned from Nord Pool.")
 
     fi_prices = data["areas"]["FI"]["values"]
 
@@ -21,7 +31,7 @@ def get_prices():
 
     for entry in fi_prices:
         hours.append(entry["start"].strftime("%H:%M"))
-        prices.append(entry["value"])  # €/MWh
+        prices.append(entry["value"])
 
     return hours, prices
 
