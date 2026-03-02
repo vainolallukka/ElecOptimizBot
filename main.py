@@ -37,7 +37,10 @@ def get_prices():
 
 
 def build_message(hours, prices):
-    # Convert €/MWh to c/kWh
+    import pytz
+    from datetime import datetime
+
+    # Convert €/MWh → c/kWh
     prices_cents = [p / 10 for p in prices]
 
     avg = sum(prices_cents) / len(prices_cents)
@@ -47,9 +50,33 @@ def build_message(hours, prices):
     min_hour = hours[prices_cents.index(min_price)]
     max_hour = hours[prices_cents.index(max_price)]
 
-    from datetime import datetime
-    import pytz
+    # ----- FIND BEST 3-HOUR WINDOW BETWEEN 08–20 -----
 
+    # Create list of (hour, price) tuples
+    hour_price = list(zip(hours, prices_cents))
+
+    # Filter between 08:00 and 20:00
+    filtered = [
+        (h, p) for h, p in hour_price
+        if 8 <= int(h.split(":")[0]) < 20
+    ]
+
+    best_window = None
+    best_avg = float("inf")
+
+    for i in range(len(filtered) - 2):
+        window = filtered[i:i+3]
+        window_prices = [p for _, p in window]
+        window_avg = sum(window_prices) / 3
+
+        if window_avg < best_avg:
+            best_avg = window_avg
+            best_window = window
+
+    start_hour = best_window[0][0]
+    end_hour = filtered[filtered.index(best_window[-1])][0]
+
+    # Format date
     today = datetime.now(
         pytz.timezone("Europe/Helsinki")
     ).strftime("%d.%m.%Y")
@@ -60,6 +87,10 @@ Average: {avg:.2f} c/kWh
 
 ⬇ Lowest: {min_hour} – {min_price:.2f} c/kWh
 ⬆ Highest: {max_hour} – {max_price:.2f} c/kWh
+
+🟢 Best 3h window (08–20):
+{start_hour}–{int(start_hour[:2])+3:02d}:00
+Avg: {best_avg:.2f} c/kWh
 """
 
 
