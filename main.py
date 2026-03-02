@@ -1,28 +1,27 @@
-import requests
 import os
 from datetime import datetime
+from nordpool import elspot
+import pytz
+import requests
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
 def get_prices():
-    url = "https://www.nordpoolgroup.com/api/marketdata/page/10?currency=EUR"
-    r = requests.get(url)
-    data = r.json()
+    prices_spot = elspot.Prices()
 
-    rows = data["data"]["Rows"]
+    data = prices_spot.hourly(
+        areas=["FI"]
+    )
 
-    prices = []
+    fi_prices = data["areas"]["FI"]["values"]
+
     hours = []
+    prices = []
 
-    for row in rows:
-        hour = row["Name"]
-        for col in row["Columns"]:
-            if col["Name"] == "FI":
-                price = col["Value"]
-                if price != "":
-                    prices.append(float(price.replace(",", ".")))
-                    hours.append(hour)
+    for entry in fi_prices:
+        hours.append(entry["start"].strftime("%H:%M"))
+        prices.append(entry["value"])  # €/MWh
 
     return hours, prices
 
@@ -35,9 +34,9 @@ def build_message(hours, prices):
     min_hour = hours[prices.index(min_price)]
     max_hour = hours[prices.index(max_price)]
 
-    today = datetime.now().strftime("%d.%m.%Y")
+    today = datetime.now(pytz.timezone("Europe/Helsinki")).strftime("%d.%m.%Y")
 
-    return f"""⚡ Electricity Prices – {today}
+    return f"""⚡ Electricity Prices Finland – {today}
 
 Average: {avg:.2f} €/MWh
 
