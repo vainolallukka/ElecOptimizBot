@@ -37,21 +37,29 @@ def get_prices():
 
 
 def build_message(hours, prices):
-    avg = sum(prices) / len(prices)
-    min_price = min(prices)
-    max_price = max(prices)
+    # Convert €/MWh to c/kWh
+    prices_cents = [p / 10 for p in prices]
 
-    min_hour = hours[prices.index(min_price)]
-    max_hour = hours[prices.index(max_price)]
+    avg = sum(prices_cents) / len(prices_cents)
+    min_price = min(prices_cents)
+    max_price = max(prices_cents)
 
-    today = datetime.now(pytz.timezone("Europe/Helsinki")).strftime("%d.%m.%Y")
+    min_hour = hours[prices_cents.index(min_price)]
+    max_hour = hours[prices_cents.index(max_price)]
+
+    from datetime import datetime
+    import pytz
+
+    today = datetime.now(
+        pytz.timezone("Europe/Helsinki")
+    ).strftime("%d.%m.%Y")
 
     return f"""⚡ Electricity Prices Finland – {today}
 
-Average: {avg:.2f} €/MWh
+Average: {avg:.2f} c/kWh
 
-⬇ Lowest: {min_hour} – {min_price:.2f}
-⬆ Highest: {max_hour} – {max_price:.2f}
+⬇ Lowest: {min_hour} – {min_price:.2f} c/kWh
+⬆ Highest: {max_hour} – {max_price:.2f} c/kWh
 """
 
 
